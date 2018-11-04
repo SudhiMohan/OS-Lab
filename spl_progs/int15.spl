@@ -1,0 +1,79 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 21;
+alias userSP R0;
+userSP=SP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+//if currrent proc is not shell
+if([SYSTEM_STATUS_TABLE+1]!=2) then
+   alias physicalAddrRetVal R5;
+	 physicalAddrRetVal = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
+	 [physicalAddrRetVal] = -1;
+   SP = userSP;
+   [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+   ireturn;
+endif;
+//if currrent user is not root
+if([PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 3]!=1) then
+ alias physicalAddrRetVal R5;
+	 physicalAddrRetVal = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
+	 [physicalAddrRetVal] = -1;
+   SP = userSP;
+   [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+   ireturn;
+endif;
+
+//invoke kill all functn
+R1=5;
+R2=[SYSTEM_STATUS_TABLE+1];
+call MOD_1;
+
+//storing bufferd disks
+R1=0;
+while(R1<4) do
+ if([BUFFER_TABLE+R1*4+1]==1) then
+   //invoke disk store
+     multipush(R1);
+     
+     R2=[SYSTEM_STATUS_TABLE+1];
+     R3=71+R1;
+     R4=[BUFFER_TABLE+R1*4+0];
+     R1=1;
+     call MOD_4;
+     multipop(R1);
+ endif;
+ R1=R1+1;
+endwhile;
+//store back the data structures
+//INODE
+R1=1;
+R2=[SYSTEM_STATUS_TABLE+1];
+R3=59;
+R4=3;
+call MOD_4;
+
+//INODE
+R1=1;
+R2=[SYSTEM_STATUS_TABLE+1];
+R3=60;
+R4=4;
+call MOD_4;
+
+
+//DFLIST
+R1=1;
+R2=[SYSTEM_STATUS_TABLE+1];
+R3=61;
+R4=2;
+call MOD_4;
+
+//ROOT
+R1=1;
+R2=[SYSTEM_STATUS_TABLE+1];
+R3=62;
+R4=5;
+call MOD_4;
+
+print("shutting down");
+
+halt;

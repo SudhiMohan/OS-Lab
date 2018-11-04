@@ -1,0 +1,41 @@
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16) + 11]*512-1;
+backup;
+
+breakpoint;
+if([SYSTEM_STATUS_TABLE+1]!=0) then
+	if([SYSTEM_STATUS_TABLE+2]<MEM_LOW) then
+		//call swapout
+		R0=0;
+		//print("from timer");
+		//print([PROCESS_TABLE+12*16+11]);
+		  R1=1;
+		  R2=[SYSTEM_STATUS_TABLE+1];
+		  call MOD_6;
+
+	else
+		if([SYSTEM_STATUS_TABLE+2]>MEM_HIGH) then
+			//call swap in
+			  R1=2;
+		  	  R2=[SYSTEM_STATUS_TABLE+1];
+		  	  call MOD_6;
+		endif;
+	endif;
+endif;
+
+
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16) + 4] = READY;
+
+//increment tick field
+R1=0;
+while(R1<16) do
+	[PROCESS_TABLE + R1*16]=[PROCESS_TABLE + R1*16]+1;
+	R1=R1+1;
+endwhile;
+
+
+call MOD_5;
+restore;
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 9]=0;
+ireturn;

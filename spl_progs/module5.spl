@@ -1,0 +1,57 @@
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE+1];
+multipush (BP);
+
+alias process_table_entry R1;
+process_table_entry =  PROCESS_TABLE + currentPID*16;
+//saving current process to process table
+[process_table_entry + 12] = SP % 512;
+[process_table_entry + 14] = PTBR;
+[process_table_entry + 15] = PTLR;
+
+alias i R2;
+i=[SYSTEM_STATUS_TABLE+1];
+if([SYSTEM_STATUS_TABLE+5]!=-1) then
+	i=[SYSTEM_STATUS_TABLE+5];
+	if([PROCESS_TABLE+ i*16 +4] == WAIT_DISK) then
+		currentPID=0;
+	else
+		currentPID=i;
+	endif;
+else
+	//finding next process
+	i=(currentPID+1)%16;
+	while(i != currentPID) do
+  		if( [PROCESS_TABLE+ i*16 +4] == CREATED || [PROCESS_TABLE+ i*16 +4] == READY) then
+			if([PROCESS_TABLE+ i*16 +6]!=1) then
+	    			 break;
+			endif;
+  		endif;
+ 		i=(i+1)%16;
+ 		if(i==0 && currentPID!=i) then
+    			i=i+1;
+  		endif;
+	endwhile;
+	if (i != currentPID) then
+  	  currentPID=i;
+	else
+	  currentPID=0;
+	endif;
+endif;
+
+
+//setting sp of new process
+SP=[PROCESS_TABLE + currentPID*16 + 11]*512 +[PROCESS_TABLE + currentPID*16 +12];
+PTBR=[PROCESS_TABLE + currentPID*16 + 14];
+PTLR=[PROCESS_TABLE + currentPID*16 + 15];
+[SYSTEM_STATUS_TABLE+1]=currentPID;
+if([PROCESS_TABLE+ currentPID*16 +4] == CREATED) then
+  BP=[[PROCESS_TABLE+ currentPID*16+11]*512];
+  SP=[PROCESS_TABLE + currentPID*16 +13];
+  [PROCESS_TABLE+ currentPID*16 +4]=RUNNING;
+  [PROCESS_TABLE + currentPID*16 + 9]=0;
+  ireturn;
+endif;
+[PROCESS_TABLE+ currentPID*16 +4]=RUNNING;
+multipop (BP);
+return;

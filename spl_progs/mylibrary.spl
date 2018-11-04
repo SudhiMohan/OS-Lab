@@ -1,0 +1,13 @@
+backup;
+alias userSP R0;
+userSP = SP;
+alias syscall R1;
+syscall = [[PTBR + 2*((userSP - 5) / 512)]*512 + ((userSP - 5) % 512)];
+alias word R2;
+word = [[PTBR + 2*((userSP - 3) / 512)]*512 + ((userSP - 3) % 512)];
+if(syscall == "Write") then
+	write(word);
+endif;
+restore;
+SP = userSP;
+ireturn;	

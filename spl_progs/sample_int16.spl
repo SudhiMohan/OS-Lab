@@ -1,0 +1,169 @@
+alias userSP R1;
+userSP = SP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+alias sysCallNum R2;
+sysCallNum = [([PTBR + 2*((userSP - 5) / 512)]*512) + ((userSP - 5) % 512)];
+alias retValAdd R3;
+retValAdd = ([PTBR + 2*((userSP - 1) / 512)]*512) + ((userSP - 1) % 512);
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11]*512 - 1;
+R7 = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9;
+R8 = ([PTBR + 2*((userSP - 4) / 512)]*512) + ((userSP - 4) % 512);
+R9 = ([PTBR + 2*((userSP - 3) / 512)]*512) + ((userSP - 3) % 512);
+if(sysCallNum == 22) then
+	[R7] = 22;
+	if(([SYSTEM_STATUS_TABLE + 0] != 1) || ([SYSTEM_STATUS_TABLE + 1] != 2)) then
+		[retValAdd] = -2;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	R4 = 0;
+	while(R4 < 16) do
+		if([USER_TABLE + (2*R4)] == -1) then
+			break;
+		endif;
+		R4 = R4 + 1;
+	endwhile;
+	if(R4 == 16) then
+		[retValAdd] = -3;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	R5 = [R8];
+	R6 = [R9];
+	encrypt R6;
+	[USER_TABLE + (2*R4)] = R5;
+	[USER_TABLE + (2*R4) + 1] = R6;
+	[retValAdd] = 0;
+	SP = userSP;
+	[R7] = 0;
+	ireturn;
+endif;
+if(sysCallNum == 23) then
+	[R7] = 23;
+	if(([SYSTEM_STATUS_TABLE + 0] != 1) || ([SYSTEM_STATUS_TABLE + 1] != 2)) then
+		[retValAdd] = -2;
+		SP = userSP;
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+		ireturn;
+	endif;
+	R4 = [R8];
+	if((R4 == "kernel") || (R4 == "root")) then
+		[retValAdd] = -2;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	R5 = 0;
+	while(R5 < 16) do
+		if([USER_TABLE + (2*R5)] == R4) then
+			break;
+		endif;
+		R5 = R5 + 1;
+	endwhile;
+	if(R5 == 16) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	R6 = 0;
+	while(R6 < 60) do
+		if([ROOT_FILE + (8*R6) + 3] == R4) then
+			break;
+		endif;
+		R6 = R6 + 1;
+	endwhile;
+	if(R6 != 60) then
+		[retValAdd] = -3;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	[USER_TABLE + (2*R5)] = -1;
+	[USER_TABLE + (2*R5) + 1] = -1;
+	[retValAdd] = 0;
+	SP = userSP;
+	[R7] = 0;
+	ireturn; 
+endif;
+if(sysCallNum == 24) then
+	[R7] = 24;
+	if([SYSTEM_STATUS_TABLE + 1] != 2) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	R4 = [R8];
+	R5 = [R9];
+	R6 = 0;
+	while(R6 < 16) do
+		if([USER_TABLE + (2*R6)] == R4) then
+			break;
+		endif;
+		R6 = R6 + 1;
+	endwhile;
+	if(R6 == 16) then
+		[retValAdd] = -2;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	if([PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 3] != R6) then
+		if([SYSTEM_STATUS_TABLE + 0] != 1) then
+			[retValAdd] = -1;
+			SP = userSP;
+			[R7] = 0;
+			ireturn;
+		endif;
+	endif;
+	encrypt R5;
+	[USER_TABLE + (2*R6) + 1] = R5;
+	[retValAdd] = 0;
+	SP = userSP;
+	[R7] = 0;
+	ireturn;
+endif;
+if(sysCallNum == 25) then
+	[R7] = 25;
+	R4 = [R8];
+	if((R4 < 0) || (R4 > 15)) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	if([USER_TABLE + (2*R4)] == -1) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	[retValAdd] = [USER_TABLE + (2*R4)];
+	SP = userSP;
+	[R7] = 0;
+	ireturn;
+endif;
+if(sysCallNum == 26) then
+	[R7] = 26;
+	R4 = [R8];
+	R5 = 0;
+	while(R5 < 16) do
+		if([USER_TABLE + (2*R5)] == R4) then
+			break;
+		endif;
+		R5 = R5 + 1;
+	endwhile;
+	if(R5 == 16) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[R7] = 0;
+		ireturn;
+	endif;
+	[retValAdd] = R5;
+	SP = userSP;
+	[R7] = 0;
+	ireturn;
+endif;

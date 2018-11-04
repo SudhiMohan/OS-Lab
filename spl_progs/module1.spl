@@ -1,0 +1,223 @@
+alias functionNum R1;
+alias currentPID R2;
+
+
+//free userareapage
+if(functionNum==2) then
+//release each valid semaphore
+R3=0;
+while(R3<8) do
+  //close files
+     R10=[PROCESS_TABLE+currentPID*16+11]*512+496+2*R3;
+  if([R10]==0) then
+    multipush(R1,R2,R3,R10);
+    R1=4;
+    R2=[R10+1];
+    call MOD_3;
+    multipop(R1,R2,R3,R10);
+  endif;
+ if([R10]==1) then
+   //invoke release semaphore
+    multipush(R1,R2,R3,R10);
+    R1=7;
+    R2=[R10+1];
+    R3=currentPID;
+    call MOD_0;
+    //return 0 or -1
+    multipop(R1,R2,R3,R10);
+  endif;
+  [R10]=-1;
+  R3=R3+1;
+endwhile;
+ multipush(R1,R2);
+ R1=2;
+ R2=[PROCESS_TABLE + currentPID * 16 + 11];
+ call MOD_2;
+ multipop(R1,R2);
+ return;
+endif;
+
+
+
+//exit process
+if(functionNum==3) then
+ //if current process is not in the exec sys call
+ if([PROCESS_TABLE + currentPID * 16 + 9]!=9) then
+    R3=0;
+    while(R3<16) do
+     //wahing other waiting procss
+       R10=PROCESS_TABLE + R3* 16;
+     if(([R10 + 4]==WAIT_PROCESS) && ([R10 + 5]==currentPID)) then
+         [R10 + 4]=READY;
+         [R10 + 5]=-1;
+     endif;
+     //MAKING CHILD ORPHAN
+     if([R10 + 2]==currentPID) then
+ 	[R10 + 2]=-1;
+     endif;
+     R3=R3+1;
+     endwhile;
+ endif;
+ //invoke free page table
+ multipush(R1,R2);
+ R1=4;
+ //R2=[SYSTEM_STATUS_TABLE+1];
+ call MOD_1;
+ multipop(R1,R2);
+ //invoke free user area pg
+ multipush(R1,R2);
+ R1=2;
+ //R2=[SYSTEM_STATUS_TABLE+1];
+ call MOD_1;
+ multipop(R1,R2);
+ //multipush(R1,R2);
+//if([SYSTEM_STATUS_TABLE+2]<5) then 
+//R1=2;
+//		  	  R2=[SYSTEM_STATUS_TABLE+1];
+//
+//		  	  call MOD_6;
+//			endif;
+  //                        multipop(R1,R2);
+ [PROCESS_TABLE + currentPID * 16 + 4]=TERMINATED;
+ return;
+endif;
+
+
+
+//free page table
+if(functionNum==4) then
+ //free lib pages
+ R10=PAGE_TABLE_BASE +currentPID*20;
+ [R10+0]=-1;
+ [R10+1]="0000";
+ [R10+2]=-1;
+ [R10+3]="0000";
+ //releasing each valid entry in page table
+ multipush(R1,R2,R10);
+ R3=5;
+ while(R3<20) do
+   if([R10+R3]!="0000") then
+	multipush(R1,R2,R3,R10);
+	R1=2;
+	R2=[R10+R3-1];
+	call MOD_2;
+	multipop(R1,R2,R3,R10);
+	[R10+R3]="0000";
+   endif;
+   [R10+R3-1]=-1;
+   R3=R3+2;
+ endwhile;
+ multipop(R1,R2,R10);
+ //CALLING RELEASE BLOCK FOR STACK AND HEAP
+R11=DISK_MAP_TABLE +currentPID*10;
+if([R11 +2]!=-1) then
+ multipush(R1,R2,R11);
+ R2=[DISK_MAP_TABLE +currentPID*10 +2];
+ R1=4;
+ R3= currentPID;
+ call MOD_2;
+ multipop(R1,R2,R11);
+endif;
+if([R11 +3]!=-1) then
+ multipush(R1,R2,R11);
+ R2=[R11 +3];
+ R1=4;
+ R3= currentPID;
+ call MOD_2;
+ multipop(R1,R2,R11);
+endif;
+if([R11 +8]!=-1) then
+ multipush(R1,R2,R11);
+ R2=[R11 +8];
+ R1=4;
+ R3= currentPID;
+ call MOD_2;
+ multipop(R1,R2,R11);
+endif;
+if([R11 +9]!=-1) then
+ multipush(R1,R2,R11);
+ R2=[R11 +9];
+ R1=4;
+ R3=currentPID;
+ call MOD_2;
+ multipop(R1,R2,R11);
+endif;
+R4=0;
+while(R4<10) do
+ [R11+R4]=-1;
+ R4=R4+1;
+endwhile;
+return;
+endif;
+
+
+
+//get pcb entry
+if(functionNum==1) then
+ R3=0;
+ while(R3<16) do
+  if([PROCESS_TABLE + R3*16 + 4]==TERMINATED) then
+    break;
+  endif;
+  R3=R3+1;
+ endwhile;
+if(R3==16) then
+R0=-1;
+return;
+endif;
+R10=PROCESS_TABLE+R3*16;
+[R10+1]=R3;
+[R10+ 4]=ALLOCATED;
+[R10+14]=PAGE_TABLE_BASE+R3*20;
+[R10+15]=10;
+R0=R3;
+return;
+endif;
+
+
+//kill all
+if(functionNum==5) then
+
+//aquire lock on all valid inodes
+R0=0;
+while(R0<60) do
+	if([INODE_TABLE+R0*16+1]!=-1) then
+		//aquire inode
+		multipush(R0,R2);
+		R1=4;
+		R3=currentPID;
+		R2=R0;
+		call MOD_0;
+		multipop(R0,R2);
+	endif;
+	R0=R0+1;
+endwhile;
+//exit all process
+R0=2;
+while(R0<16) do
+	if(R0!=currentPID && [PROCESS_TABLE+R0*16+4]!=TERMINATED) then
+		multipush(R0,R2);
+		R1=3;
+		R2=R0;
+		call MOD_1;
+		multipop(R0,R2);
+	endif;
+	R0=R0+1;
+endwhile;
+//release lock on all valid inodes
+R0=0;
+while(R0<60) do
+	if([INODE_TABLE+R0*16+1]!=-1) then
+		//relese inode
+		multipush(R0,R2);
+		R1=5;
+		R3=currentPID;
+		R2=R0;
+		call MOD_0;
+		multipop(R0,R2);
+	endif;
+	R0=R0+1;
+endwhile;
+return;
+endif;
+

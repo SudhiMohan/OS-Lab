@@ -1,0 +1,114 @@
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 5;
+alias userSP R0;
+userSP = SP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = userSP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+alias fileDescriptor R1;
+fileDescriptor = [([PTBR + 2*((userSP - 4) / 512)] * 512) + ((userSP - 4) % 512)];
+alias retValAdd R2;
+retValAdd = ([PTBR + 2*((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
+R9 = [[PTBR + 2*((userSP - 3) / 512)]*512 + ((userSP - 3) % 512)];
+if(fileDescriptor != -2) then
+	if((fileDescriptor < 0) || (fileDescriptor > 7)) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+		ireturn;
+	endif;
+	R3 = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11]*512 + 496;
+	if(([R3 + (fileDescriptor * 2)] == -1) || ([R3 + (fileDescriptor * 2)] != FILE)) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+		ireturn;
+	endif;
+	R4 = [R3 + (fileDescriptor * 2) + 1];
+	R5 = [OPEN_FILE_TABLE + (4*R4)];
+	if(([INODE_TABLE + (R5*16) + 3] != [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 3]) && ([INODE_TABLE + (R5*16) + 4] == 0)) then
+		[retValAdd] = -3;
+		SP = userSP;
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+		ireturn;
+	endif;
+	multipush(R0,R1,R2,R3,R4,R5,R9);
+	R1 = 4;
+	R2 = R5;
+	R3 = [SYSTEM_STATUS_TABLE + 1];
+	call MOD_0;
+	R7 = R0;
+	multipop(R0,R1,R2,R3,R4,R5,R9);
+	if(R7 == -1) then
+		[retValAdd] = -1;
+		SP = userSP;
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+		ireturn;
+	endif;
+	R6 = [OPEN_FILE_TABLE + (4*R4) + 2];
+	if(R6 == 2048) then
+		multipush(R0,R1,R2,R3,R4,R5,R6,R9);
+		R1 = 5;
+		R2 = R5;
+		R3 = [SYSTEM_STATUS_TABLE + 1];
+		call MOD_0;
+		multipop(R0,R1,R2,R3,R4,R5,R6,R9);
+		[retValAdd] = -2;
+		SP = userSP;
+		[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+		ireturn;
+	endif;
+	if((R6 % 512 == 0) && ([INODE_TABLE + (R5*16) + 2] == R6)) then
+		multipush(R0,R1,R2,R3,R4,R5,R6,R9);
+		R1 = 3;
+		call MOD_2;
+		R7 = R0;
+		multipop(R0,R1,R2,R3,R4,R5,R6,R9);
+		if(R7 == -1) then
+			multipush(R0,R1,R2,R3,R4,R5,R6,R9);
+			R1 = 5;
+			R2 = R5;
+			R3 = [SYSTEM_STATUS_TABLE + 1];
+			call MOD_0;
+			multipop(R0,R1,R2,R3,R4,R5,R6,R9);
+			[retValAdd] = -2;
+			SP = userSP;
+			[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+			ireturn;
+		endif;
+		[INODE_TABLE + (R5*16) + 8 + (R6 / 512)] = R7;
+	endif;
+	R7 = R6 / 512;
+	R8 = R6 % 512;
+	multipush(R0,R1,R2,R3,R4,R5,R6,R7,R8,R9);
+	R1 = 1;
+	R2 = [INODE_TABLE + (R5*16) + 8 + R7];
+	R3 = R8;
+	R4 = R9;
+	call MOD_3;
+	multipop(R0,R1,R2,R3,R4,R5,R6,R7,R8,R9);
+	if([INODE_TABLE + (R5*16) + 2] == R6) then
+		[INODE_TABLE + (R5*16) + 2] = [INODE_TABLE + (R5*16) + 2] + 1;
+		[ROOT_FILE + (R5*8) + 1] = [ROOT_FILE + (R5*8) + 1] + 1;
+	endif;
+	[OPEN_FILE_TABLE + (4*R4) + 2] = [OPEN_FILE_TABLE + (4*R4) + 2] + 1;
+	multipush(R0,R1,R2,R3,R4,R5,R6,R7,R8,R9);
+	R1 = 5;
+	R2 = R5;
+	R3 = [SYSTEM_STATUS_TABLE + 1];
+	call MOD_0;
+	multipop(R0,R1,R2,R3,R4,R5,R6,R7,R8,R9);
+	[retValAdd] = 0;
+	SP = userSP;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+	ireturn;
+else
+	multipush(R0,R1,R2,R3,R9);
+	R1 = 3;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = R9;
+	call MOD_4;
+	multipop(R0,R1,R2,R3,R9);
+	[retValAdd] = 0;
+	SP = userSP;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+	ireturn;
+endif;

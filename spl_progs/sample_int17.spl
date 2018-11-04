@@ -1,0 +1,47 @@
+alias userSP R1;
+userSP = SP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+alias retValAdd R2;
+retValAdd = ([PTBR + 2*((userSP - 1) / 512)]*512) + ((userSP - 1) % 512);
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11]*512 - 1;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 9] = 27;
+if([SYSTEM_STATUS_TABLE + 1] != 1) then
+	[retValAdd] = -2;
+	SP = userSP;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+	ireturn;
+endif;
+R3 = [([PTBR + 2*((userSP - 4) / 512)] * 512) + ((userSP - 4) % 512)];
+R4 = [([PTBR + 2*((userSP - 3) / 512)] * 512) + ((userSP - 3) % 512)];
+R5 = 0;
+while(R5 < 16) do
+	if([USER_TABLE + (2*R5)] == R3) then
+		break;
+	endif;
+	R5 = R5 + 1;
+endwhile;
+if(R5 == 16) then
+	[retValAdd] = -1;
+	SP = userSP;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+	ireturn;
+endif;
+encrypt R4;
+if([USER_TABLE + (2*R5) + 1] != R4) then
+	[retValAdd] = -1;
+	SP = userSP;
+	[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+	ireturn;
+endif;
+[PROCESS_TABLE + (2*16) + 4] = CREATED;
+[PROCESS_TABLE + (2*16) + 3] = R5;
+[PROCESS_TABLE + 16 + 4] = WAIT_PROCESS;
+[PROCESS_TABLE + 16 + 5] = 2;
+[SYSTEM_STATUS_TABLE + 0] = R5;
+multipush(R1,R2,R3,R4,R5);
+call MOD_5;
+multipop(R1,R2,R3,R4,R5);
+[retValAdd] = 0;
+SP = userSP;
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+ireturn;

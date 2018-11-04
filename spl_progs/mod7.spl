@@ -1,0 +1,279 @@
+//init code pages
+loadi(65,7);
+
+//int 10 interrupt
+loadi(22,35);
+loadi(23,36);
+
+//exception handler
+loadi(2,15);
+loadi(3,16);
+
+//library code
+loadi(63,13);
+loadi(64,14);
+
+//timer interrupt
+loadi(4,17);
+loadi(5,18);
+
+//int 7 interrupt handler
+loadi(16,29);
+loadi(17,30);
+
+//scheduler module
+loadi(50,63);
+loadi(51,64);
+
+//module 0
+loadi(40,53);
+loadi(41,54);
+
+//module 4
+loadi(48,61);
+loadi(49,62);
+
+//int 6 interrupt handler
+loadi(14,27);
+loadi(15,28);
+
+//console interrupt
+loadi(8,21);
+loadi(9,22);
+
+//int 9 interrupt handler
+loadi(20,33);
+loadi(21,34);
+
+//module 1
+loadi(42,55);
+loadi(43,56);
+
+//module 2
+loadi(44,57);
+loadi(45,58);
+
+//memory copy of inode table
+loadi(59,3);
+loadi(60,4);
+
+//disk interrupt routine
+loadi(6,19);
+loadi(7,20);
+
+//memory copy of disk free list
+loadi(61,2);
+
+//int 8 interrupt handler
+loadi(18,31);
+loadi(19,32);
+
+//int 11 interrupt handler
+loadi(24,37);
+loadi(25,38);
+
+//int 13 interrupt handler
+loadi(28,41);
+loadi(29,42);
+
+//int 14 interrupt handler
+loadi(30,43);
+loadi(31,44);
+
+//int 15 interrupt handler
+loadi(32,45);
+loadi(33,46);
+
+//int 4 interrupt handler
+loadi(10,23);
+loadi(11,24);
+
+//memory copy of root file
+loadi(62,5);
+
+//int 5 interrupt handler
+loadi(12,25);
+loadi(13,26);
+
+//module 3
+loadi(46,59);
+loadi(47,60);
+
+//shell code
+loadi(67,9);
+loadi(68,10);
+
+//int 17 interrupt handler
+loadi(36,49);
+loadi(37,50);
+
+//int 16 interrupt handler
+loadi(34,47);
+loadi(35,48); 
+
+//int 12 interrupt handler
+loadi(26,39);
+loadi(27,40);
+
+//module 6
+loadi(52,65);
+loadi(53,66);
+
+[TERMINAL_STATUS_TABLE + 0] = 0;
+[DISK_STATUS_TABLE + 0] = 0;
+[SYSTEM_STATUS_TABLE + 4] = 0;
+[SYSTEM_STATUS_TABLE + 5] = -1;
+
+alias i R0;
+
+i = 0;
+while(i < 60) do
+	[FILE_STATUS_TABLE + (4*i)] = -1;
+	[FILE_STATUS_TABLE + (4*i) + 1] = -1;
+	i = i + 1;
+endwhile;
+
+i = 0;
+while(i < 4) do
+	[BUFFER_TABLE + (4*i)] = -1;
+	[BUFFER_TABLE + (4*i) + 1] = 0;
+	[BUFFER_TABLE + (4*i) + 2] = -1;
+	i = i + 1;
+endwhile;
+
+i = 0;
+while(i < 32) do
+	[OPEN_FILE_TABLE + (4*i)] = -1;
+	[OPEN_FILE_TABLE + (4*i) + 1] = 0;
+	[SEMAPHORE_TABLE + (4*i)] = -1;
+	[SEMAPHORE_TABLE + (4*i) + 1] = 0;
+	i = i + 1;
+endwhile;
+
+i = 0;
+while(i < 8) do
+	[([PROCESS_TABLE + 16 + 11]*512) + 496 + (i*2)] = -1;
+	i = i + 1;
+endwhile;
+
+i = 0;
+while(i < 81) do
+	[MEMORY_FREE_LIST + i] = 1;
+	i = i + 1;
+endwhile;
+
+i = 81;
+while(i < 128) do
+	[MEMORY_FREE_LIST + i] = 0;
+	i = i + 1;
+endwhile;
+
+i = 128 - 81;	
+[SYSTEM_STATUS_TABLE + 2] = i;
+[SYSTEM_STATUS_TABLE + 3] = 0;
+
+PTBR = PAGE_TABLE_BASE;
+PTLR = 10;
+
+//Page table entry for init program
+//Library
+[PTBR+20] = 63;
+[PTBR+21] = "0100";
+[PTBR+22] = 64;
+[PTBR+23] = "0100";
+
+//Heap
+[PTBR+24] = -1;
+[PTBR+25] = "0000";
+[PTBR+26] = -1;
+[PTBR+27] = "0000";
+
+//Code
+[PTBR+28] = 65;
+[PTBR+29] = "0100";
+[PTBR+30] = -1;
+[PTBR+31] = "0000";
+[PTBR+32] = -1;
+[PTBR+33] = "0000";
+[PTBR+34] = -1;
+[PTBR+35] = "0000";
+
+//Stack
+[PTBR+36] = 66;
+[PTBR+37] = "0110";
+[PTBR+38] = -1;
+[PTBR+39] = "0000";
+
+//Process table entry for init program
+[PROCESS_TABLE + 16 + 1] = 1;
+[PROCESS_TABLE + 16 + 3] = 1;
+[PROCESS_TABLE + 16 + 4] = CREATED;
+[PROCESS_TABLE + 16 + 11] = 77;
+[PROCESS_TABLE + 16 + 12] = 0;
+[PROCESS_TABLE + 16 + 13] = 8*512;
+[PROCESS_TABLE + 16 + 14] = PAGE_TABLE_BASE + 20;
+[PROCESS_TABLE + 16 + 15] = 10;
+
+[66*512] = [65*512 + 1];
+
+//Page table entry for shell program
+//Library
+[PTBR+40] = 63;
+[PTBR+41] = "0100";
+[PTBR+42] = 64;
+[PTBR+43] = "0100";
+
+//Heap
+[PTBR+44] = -1;
+[PTBR+45] = "0000";
+[PTBR+46] = -1;
+[PTBR+47] = "0000";
+
+//Code
+[PTBR+48] = 67;
+[PTBR+49] = "0100";
+[PTBR+50] = 68;
+[PTBR+51] = "0100";
+[PTBR+52] = -1;
+[PTBR+53] = "0000";
+[PTBR+54] = -1;
+[PTBR+55] = "0000";
+
+//Stack
+[PTBR+56] = 78;
+[PTBR+57] = "0110";
+[PTBR+58] = 79;
+[PTBR+59] = "0110";
+
+//Process table entry for shell program
+[PROCESS_TABLE + 32 + 1] = 2;
+[PROCESS_TABLE + 32 + 2] = 1;
+[PROCESS_TABLE + 32 + 4] = TERMINATED;
+[PROCESS_TABLE + 32 + 11] = 80;
+[PROCESS_TABLE + 32 + 12] = 0;
+[PROCESS_TABLE + 32 + 13] = 8*512;
+[PROCESS_TABLE + 32 + 14] = PAGE_TABLE_BASE + 40;
+[PROCESS_TABLE + 32 + 15] = 10;
+
+R1 = 0;
+while(R1 < 10) do
+	[DISK_MAP_TABLE + 20 + R1] = -1;
+	R1 = R1 + 1;
+endwhile;
+
+[DISK_MAP_TABLE + 20 + 4] = 9;
+[DISK_MAP_TABLE + 20 + 5] = 10;
+
+[78*512] = [67*512 + 1];
+
+[PROCESS_TABLE + 0] = 0;
+[PROCESS_TABLE + 16] = 0;
+
+alias num R1;
+num = 2;
+while(num <= 15) do
+	[PROCESS_TABLE + (num*16)] = 0;
+	[PROCESS_TABLE + (num*16) + 4] = TERMINATED;
+	num = num + 1;
+endwhile;	
+return;
