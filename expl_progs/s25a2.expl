@@ -1,0 +1,35 @@
+int main()
+{
+	decl
+		int temp, perm, fileDesc, i;
+		str fileName;
+	enddecl
+	begin
+		temp = exposcall("Read", -1, fileName);
+		fileDesc = exposcall("Open", fileName);
+		if(fileDesc < 0) then
+			write("Can't open.");
+		else
+			while(1 == 1) do
+				temp = exposcall("Read", fileDesc, i);
+				if(temp == -2) then
+					break;
+				endif;
+			endwhile;	
+			i = 2000;
+			while(i <= 2513) do
+				temp = exposcall("Write", fileDesc, i);
+				i = i + 1;
+			endwhile;
+			while(1 == 1) do
+				temp = exposcall("Read", fileDesc, i);
+				temp = exposcall("Write", -2, i);
+				temp = exposcall("Seek", fileDesc, -2);
+				if(temp == -2) then
+					break;
+				endif;
+			endwhile;		
+		endif;
+		return 0;
+	end
+}

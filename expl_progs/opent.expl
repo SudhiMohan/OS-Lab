@@ -1,0 +1,11 @@
+int main()
+{
+	decl
+		int temp, fnum, fname;
+	enddecl
+	begin
+		read(fname);
+		fnum = exposcall("Open", fname);
+		return 0;
+	end
+}

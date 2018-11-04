@@ -1,0 +1,13 @@
+int main()
+{
+	decl
+		int temp, perm;
+		str pname; 
+	enddecl
+	begin
+		read(pname);
+		read(perm);
+		temp = exposcall("Create", pname, perm);
+		return 0;
+	end
+}

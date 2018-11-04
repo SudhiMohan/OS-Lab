@@ -1,0 +1,22 @@
+int main()
+{
+	decl
+		int temp, m, pid;
+	enddecl
+	begin
+		m = 10;
+		pid = exposcall("Fork");
+		if(pid == 0) then
+			m = m + 10;
+			temp = exposcall("Signal");
+			write(m);
+		else
+			m = m + 5;
+			write(m);
+			temp = exposcall("Wait", pid);
+			m = m + 2;
+			write(m);
+		endif;
+		return 0;
+	end
+}
